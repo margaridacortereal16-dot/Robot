@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Robô Programador - Pré-Escolar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+        * {
+            font-family: 'Fredoka', cursive, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* High Contrast Mode Override */
+        body.high-contrast {
+            background-color: #000000 !important;
+            color: #FFFFFF !important;
+        }
+        
+        body.high-contrast .bg-card {
+            background-color: #1a1a1a !important;
+            border: 3px solid #ffff00 !important;
+        }
+
+        body.high-contrast .text-contrast {
+            color: #ffff00 !important;
+        }
+
+        /* Large Font Mode */
+        body.text-large {
+            font-size: 1.25rem;
+        }
+        body.text-large .btn-label {
+            font-size: 1.35rem !important;
+        }
+
+        /* Robot Grid cell transitions */
+        .grid-cell {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .robot-avatar {
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Command card pulse on active execution */
+        .command-active {
+            transform: scale(1.15);
+            box-shadow: 0 0 20px #fbbf24;
+            border-color: #f59e0b !important;
+            z-index: 20;
+        }
+
+        /* Custom Bounce Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(3deg); }
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Custom Scrollbar for program line */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-sky-100 min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden transition-colors duration-300">
+
+    <!-- Accessibility Top Bar -->
+    <header class="bg-white/90 backdrop-blur-md shadow-md p-2 sm:p-4 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <!-- App Title -->
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-400 p-2 sm:p-3 rounded-2xl shadow-md animate-float">
+                    <i class="fa-solid fa-robot text-3xl sm:text-4xl text-slate-900"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-3xl font-bold text-sky-700 leading-none">Robot Programador</h1>
+                    <p class="text-xs sm:text-sm text-slate-500 font-semibold">Programação para Pequenos Exploradores 🌟</p>
+                </div>
+            </div>
+
+            <!-- Accessibility Toolbar -->
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <!-- Sound Toggle -->
+                <button id="btn-sound" onclick="toggleSound()" class="p-2 sm:p-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl font-bold flex items-center gap-1 shadow-sm border-2 border-emerald-300 active:scale-95 transition" title="Ligar/Desligar Sons" aria-label="Ligar ou Desligar Sons">
+                    <i id="icon-sound" class="fa-solid fa-volume-high text-lg sm:text-xl"></i>
+                    <span class="hidden md:inline text-xs sm:text-sm">Som</span>
+                </button>
+
+                <!-- Voice / TTS Toggle -->
+                <button id="btn-speech" onclick="toggleSpeech()" class="p-2 sm:p-3 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-xl font-bold flex items-center gap-1 shadow-sm border-2 border-purple-300 active:scale-95 transition" title="Ligar/Desligar Voz de Ajuda" aria-label="Voz Falada">
+                    <i id="icon-speech" class="fa-solid fa-comment-dots text-lg sm:text-xl"></i>
+                    <span class="hidden md:inline text-xs sm:text-sm">Voz Falada</span>
+                </button>
+
+                <!-- High Contrast Toggle -->
+                <button onclick="toggleContrast()" class="p-2 sm:p-3 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-bold flex items-center gap-1 shadow-sm border-2 border-slate-400 active:scale-95 transition" title="Modo Alto Contraste" aria-label="Alto Contraste">
+                    <i class="fa-solid fa-circle-half-stroke text-lg sm:text-xl"></i>
+                    <span class="hidden md:inline text-xs sm:text-sm">Contraste</span>
+                </button>
+
+                <!-- Font / Button Size Toggle -->
+                <button onclick="toggleTextSize()" class="p-2 sm:p-3 bg-orange-100 hover:bg-orange-200 text-orange-800 rounded-xl font-bold flex items-center gap-1 shadow-sm border-2 border-orange-300 active:scale-95 transition" title="Aumentar Tamanho dos Elementos" aria-label="Tamanho Grande">
+                    <i class="fa-solid fa-text-height text-lg sm:text-xl"></i>
+                    <span class="hidden md:inline text-xs sm:text-sm">Tamanho</span>
+                </button>
+
+                <!-- Execution Speed Toggle -->
+                <button id="btn-speed" onclick="toggleSpeed()" class="p-2 sm:p-3 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-xl font-bold flex items-center gap-1 shadow-sm border-2 border-blue-300 active:scale-95 transition" title="Velocidade de Execução" aria-label="Velocidade Devagar ou Normal">
+                    <i id="icon-speed" class="fa-solid fa-turtle text-lg sm:text-xl text-emerald-700"></i>
+                    <span id="label-speed" class="hidden md:inline text-xs sm:text-sm">Devagar</span>
+                </button>
+
+                <!-- Costume Selector Button -->
+                <button id="btn-costume" onclick="openCostumeModal()" class="p-2 sm:p-3 bg-pink-100 hover:bg-pink-200 text-pink-800 rounded-xl font-bold flex items-center gap-1 shadow-sm border-2 border-pink-300 active:scale-95 transition" title="Escolher Roupa do Robot" aria-label="Escolher Roupa do Robot">
+                    <i class="fa-solid fa-shirt text-lg sm:text-xl text-pink-600"></i>
+                    <span class="hidden md:inline text-xs sm:text-sm">Roupa</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Interactive Area -->
+    <main class="max-w-6xl w-full mx-auto p-2 sm:p-4 flex-1 flex flex-col lg:flex-row gap-4 items-stretch justify-center">
+
+        <!-- Left Column: Map & Instructions -->
+        <section class="flex-1 flex flex-col gap-3">
+            <!-- Level Selector & Status Card -->
+            <div class="bg-white rounded-3xl p-3 sm:p-4 shadow-lg border-4 border-sky-200 flex items-center justify-between gap-2 bg-card">
+                <div class="flex items-center gap-2">
+                    <button onclick="changeLevel(-1)" class="w-10 h-10 sm:w-12 sm:h-12 bg-sky-500 hover:bg-sky-600 active:scale-90 text-white font-bold rounded-2xl flex items-center justify-center text-xl shadow" aria-label="Nível Anterior">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <span class="text-xs uppercase font-extrabold tracking-wider text-sky-500 block">Nível Atual</span>
+                        <h2 id="level-title" class="text-base sm:text-xl font-extrabold text-slate-800 text-contrast">1. Primeiro Passo</h2>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- Stars / Score indicator -->
+                    <div id="stars-container" class="flex gap-1 text-amber-400 text-lg sm:text-2xl">
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-regular fa-star text-slate-300"></i>
+                        <i class="fa-regular fa-star text-slate-300"></i>
+                    </div>
+
+                    <button onclick="changeLevel(1)" class="w-10 h-10 sm:w-12 sm:h-12 bg-sky-500 hover:bg-sky-600 active:scale-90 text-white font-bold rounded-2xl flex items-center justify-center text-xl shadow" aria-label="Próximo Nível">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Speech Bubble Mission Helper -->
+            <div id="mission-box" onclick="speakCurrentMission()" class="bg-amber-100 border-3 border-amber-300 text-amber-900 rounded-2xl p-3 sm:p-4 shadow-sm flex items-center gap-3 cursor-pointer hover:bg-amber-200/80 transition active:scale-98">
+                <div class="text-2xl sm:text-3xl text-amber-600">
+                    <i class="fa-solid fa-bullhorn animate-bounce"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs font-bold text-amber-700 uppercase">Missão do Robot:</p>
+                    <p id="mission-text" class="text-sm sm:text-base font-bold leading-snug">Ajuda o robot a chegar à pilha brilhante! 🔋</p>
+                </div>
+                <button class="bg-amber-300 hover:bg-amber-400 p-2 rounded-xl text-amber-900 text-sm font-bold flex items-center gap-1 shadow-sm">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span class="hidden sm:inline">Ouvir</span>
+                </button>
+            </div>
+
+            <!-- Grid Container -->
+            <div class="bg-white rounded-3xl p-3 sm:p-5 shadow-xl border-4 border-sky-300 flex-1 flex flex-col items-center justify-center relative bg-card">
+                <div id="grid" class="grid gap-2 w-full max-w-[420px] aspect-square bg-sky-50 p-2 sm:p-3 rounded-2xl border-2 border-sky-200 shadow-inner">
+                    <!-- Dynamic Grid Cells generated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Toast / Message Box (Positioned clearly below the grid so it doesn't obstruct view) -->
+            <div id="message-toast" class="hidden bg-white border-4 border-sky-500 rounded-3xl p-4 sm:p-5 shadow-2xl text-center transition-all bg-card animate-bounce-short">
+                <div id="toast-icon" class="text-4xl sm:text-5xl mb-1">🎉</div>
+                <h3 id="toast-title" class="text-lg sm:text-2xl font-black text-sky-800 mb-1">Parabéns!</h3>
+                <p id="toast-body" class="text-xs sm:text-sm text-slate-600 font-bold mb-3">O robot conseguiu chegar ao objetivo!</p>
+                <button id="toast-btn" onclick="closeToast()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-sm sm:text-base font-bold px-6 py-2.5 rounded-2xl shadow-lg active:scale-95 transition w-full">
+                    Continuar 🚀
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Column: Command Controls & Sequence Sequence -->
+        <section class="flex-1 flex flex-col gap-3">
+            
+            <!-- Command Sequence Pipeline (Fila de Ações) -->
+            <div class="bg-white rounded-3xl p-3 sm:p-4 shadow-lg border-4 border-indigo-200 flex flex-col gap-2 bg-card">
+                <div class="flex items-center justify-between border-b-2 border-slate-100 pb-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-600 text-xl"></i>
+                        <h3 class="font-bold text-slate-700 text-base sm:text-lg text-contrast">Sequência de Passos:</h3>
+                    </div>
+                    <span id="step-count" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-full">0 / 10 passos</span>
+                </div>
+
+                <!-- Sequence Drop / Display Bar -->
+                <div id="sequence-bar" class="min-h-[85px] sm:min-h-[105px] bg-slate-100 rounded-2xl p-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar border-2 border-dashed border-slate-300">
+                    <p id="empty-hint" class="text-slate-400 font-semibold text-sm w-full text-center py-4">
+                        <i class="fa-solid fa-hand-pointer mr-1 animate-pulse"></i> Toca nas setas abaixo para adicionar ações!
+                    </p>
+                </div>
+
+                <!-- Pipeline Action Buttons (Play, Undo, Clear) -->
+                <div class="flex gap-2 pt-1">
+                    <button id="btn-play" onclick="runProgram()" class="flex-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold text-lg sm:text-xl py-3 px-4 rounded-2xl shadow-md flex items-center justify-center gap-2 border-b-4 border-emerald-700 transition">
+                        <i class="fa-solid fa-play text-xl sm:text-2xl"></i>
+                        <span>LIGAR ROBOT!</span>
+                    </button>
+
+                    <button onclick="removeLastCommand()" class="bg-amber-400 hover:bg-amber-500 active:scale-95 text-slate-900 font-extrabold p-3 rounded-2xl shadow-md flex items-center justify-center border-b-4 border-amber-600 transition" title="Apagar último comando" aria-label="Apagar Último Passo">
+                        <i class="fa-solid fa-rotate-left text-xl"></i>
+                    </button>
+
+                    <button onclick="clearProgram()" class="bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-extrabold p-3 rounded-2xl shadow-md flex items-center justify-center border-b-4 border-rose-700 transition" title="Limpar tudo" aria-label="Limpar Toda a Sequência">
+                        <i class="fa-solid fa-trash-can text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Command Palette Buttons -->
+            <div class="bg-white rounded-3xl p-3 sm:p-5 shadow-lg border-4 border-sky-200 flex-1 flex flex-col justify-center bg-card">
+                <h3 class="font-bold text-slate-700 mb-3 text-base sm:text-lg flex items-center gap-2 text-contrast">
+                    <i class="fa-solid fa-gamepad text-sky-600"></i> Botões de Comando:
+                </h3>
+
+                <!-- Directional & Rotation Buttons Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                    
+                    <!-- Move Up -->
+                    <button onclick="addCommand('move-up')" class="group relative bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white p-2.5 sm:p-3 rounded-2xl shadow-lg border-b-4 border-emerald-700 flex flex-col items-center justify-center transition gap-0.5">
+                        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl sm:text-2xl">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </div>
+                        <span class="btn-label font-black text-xs sm:text-sm tracking-wide uppercase mt-1">Seta Cima</span>
+                        <span class="text-[9px] sm:text-[10px] text-emerald-100 font-semibold">(Ir para cima)</span>
+                    </button>
+
+                    <!-- Move Down -->
+                    <button onclick="addCommand('move-down')" class="group relative bg-amber-500 hover:bg-amber-600 active:scale-95 text-white p-2.5 sm:p-3 rounded-2xl shadow-lg border-b-4 border-amber-700 flex flex-col items-center justify-center transition gap-0.5">
+                        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl sm:text-2xl">
+                            <i class="fa-solid fa-arrow-down"></i>
+                        </div>
+                        <span class="btn-label font-black text-xs sm:text-sm tracking-wide uppercase mt-1">Seta Baixo</span>
+                        <span class="text-[9px] sm:text-[10px] text-amber-100 font-semibold">(Ir para baixo)</span>
+                    </button>
+
+                    <!-- Move Left -->
+                    <button onclick="addCommand('move-left')" class="group relative bg-sky-500 hover:bg-sky-600 active:scale-95 text-white p-2.5 sm:p-3 rounded-2xl shadow-lg border-b-4 border-sky-700 flex flex-col items-center justify-center transition gap-0.5">
+                        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl sm:text-2xl">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </div>
+                        <span class="btn-label font-black text-xs sm:text-sm tracking-wide uppercase mt-1">Seta Esquerda</span>
+                        <span class="text-[9px] sm:text-[10px] text-sky-100 font-semibold">(Ir para esquerda)</span>
+                    </button>
+
+                    <!-- Move Right -->
+                    <button onclick="addCommand('move-right')" class="group relative bg-teal-500 hover:bg-teal-600 active:scale-95 text-white p-2.5 sm:p-3 rounded-2xl shadow-lg border-b-4 border-teal-700 flex flex-col items-center justify-center transition gap-0.5">
+                        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl sm:text-2xl">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                        <span class="btn-label font-black text-xs sm:text-sm tracking-wide uppercase mt-1">Seta Direita</span>
+                        <span class="text-[9px] sm:text-[10px] text-teal-100 font-semibold">(Ir para direita)</span>
+                    </button>
+
+                    <!-- Turn Left -->
+                    <button onclick="addCommand('turn-left')" class="group relative bg-purple-500 hover:bg-purple-600 active:scale-95 text-white p-2.5 sm:p-3 rounded-2xl shadow-lg border-b-4 border-purple-700 flex flex-col items-center justify-center transition gap-0.5">
+                        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl sm:text-2xl">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </div>
+                        <span class="btn-label font-black text-xs sm:text-sm tracking-wide uppercase mt-1">Girar ↺</span>
+                        <span class="text-[9px] sm:text-[10px] text-purple-100 font-semibold">(Rodar esquerda)</span>
+                    </button>
+
+                    <!-- Turn Right -->
+                    <button onclick="addCommand('turn-right')" class="group relative bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white p-2.5 sm:p-3 rounded-2xl shadow-lg border-b-4 border-indigo-700 flex flex-col items-center justify-center transition gap-0.5">
+                        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl sm:text-2xl">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </div>
+                        <span class="btn-label font-black text-xs sm:text-sm tracking-wide uppercase mt-1">Girar ↻</span>
+                        <span class="text-[9px] sm:text-[10px] text-indigo-100 font-semibold">(Rodar direita)</span>
+                    </button>
+
+                </div>
+
+                <!-- Special Action Button -->
+                <div class="mt-3">
+                    <button onclick="addCommand('action')" class="w-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white p-3 rounded-2xl shadow-lg border-b-4 border-rose-700 flex items-center justify-center gap-3 transition">
+                        <i class="fa-solid fa-bolt text-2xl"></i>
+                        <div class="text-left">
+                            <span class="btn-label font-black text-sm sm:text-base uppercase block leading-tight">Ação / Apanhar ⚡</span>
+                            <span class="text-[10px] sm:text-xs text-rose-100 font-semibold block">Usar ferramentas ou apanhar objetos</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Costume Selection Modal -->
+    <div id="costume-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 transition-all">
+        <div class="bg-white rounded-3xl p-4 sm:p-6 shadow-2xl border-4 border-pink-400 max-w-2xl w-full max-h-[90vh] flex flex-col bg-card">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b-2 border-pink-100 pb-3 mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="bg-pink-100 p-2 rounded-2xl text-pink-600 text-2xl">
+                        <i class="fa-solid fa-shirt"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl sm:text-2xl font-extrabold text-pink-700 text-contrast leading-tight">Escolhe a Roupa do Robot!</h3>
+                        <p class="text-xs sm:text-sm text-slate-500 font-semibold">Toca no teu fato favorito 🌟</p>
+                    </div>
+                </div>
+                <button onclick="closeCostumeModal()" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-xl flex items-center justify-center transition active:scale-90">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Costumes Grid -->
+            <div id="costumes-grid" class="flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 p-1 no-scrollbar">
+                <!-- Dynamically populated costumes -->
+            </div>
+
+            <!-- Modal Footer Button -->
+            <div class="mt-4 pt-3 border-t border-slate-100 text-center">
+                <button onclick="closeCostumeModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-2xl shadow-md text-base active:scale-95 transition">
+                    Pronto! 👍
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Information -->
+    <footer class="bg-white/70 py-3 text-center text-xs text-slate-500 font-semibold border-t border-slate-200">
+        <p>🤖 Robot Programador • Criado para aprendizagem lúdica e acessível no Pré-Escolar</p>
+    </footer>
+
+    <script>
+        // Game State Variables
+        let soundEnabled = true;
+        let speechEnabled = true;
+        let highContrast = false;
+        let largeText = false;
+        let isSlowSpeed = true;
+        let isRunning = false;
+        let currentCostume = 'robot';
+
+        let currentLevelIndex = 0;
+        let robotPos = { x: 0, y: 0 };
+        let robotDir = 0; // 0: Up (0deg), 1: Right (90deg), 2: Down (180deg), 3: Left (270deg)
+        let robotAngle = 0; // Continuous rotation angle for smooth animation
+        let sequence = [];
+        const MAX_STEPS = 12;
+
+        const costumeList = [
+            { id: 'robot', name: 'Robot Clássico', icon: '🤖', bg: 'bg-sky-100', sound: 'Robot Clássico' },
+            { id: 'joaninha', name: 'Joaninha', icon: '🐞', bg: 'bg-rose-100', sound: 'Joaninha' },
+            { id: 'lagarta', name: 'Lagarta', icon: '🐛', bg: 'bg-emerald-100', sound: 'Lagarta' },
+            { id: 'abelha', name: 'Abelha', icon: '🐝', bg: 'bg-amber-100', sound: 'Abelha' },
+            { id: 'tubarao', name: 'Tubarão', icon: '🦈', bg: 'bg-blue-100', sound: 'Tubarão' },
+            { id: 'peixe-palhaco', name: 'Peixe Palhaço', icon: '🐠', bg: 'bg-orange-100', sound: 'Peixe Palhaço' },
+            { id: 'dinossauro', name: 'Dinossauro', icon: '🦖', bg: 'bg-emerald-100', sound: 'Dinossauro' },
+            { id: 'leao', name: 'Leão / Gato', icon: '🦁', bg: 'bg-amber-100', sound: 'Leão' },
+            { id: 'policia', name: 'Polícia', icon: '🚓', bg: 'bg-indigo-100', sound: 'Carro de Polícia' },
+            { id: 'bombeiros', name: 'Bombeiros', icon: '🚒', bg: 'bg-rose-100', sound: 'Carro de Bombeiros' },
+            { id: 'ambulancia', name: 'Ambulância', icon: '🚑', bg: 'bg-red-100', sound: 'Ambulância' },
+            { id: 'trator', name: 'Trator', icon: '🚜', bg: 'bg-lime-100', sound: 'Trator Agrícola' },
+            { id: 'corrida', name: 'Carro Corrida', icon: '🏎️', bg: 'bg-red-100', sound: 'Carro de Corrida' },
+            { id: 'lixo', name: 'Camião Lixo', icon: '🚛', bg: 'bg-green-100', sound: 'Camião do Lixo' },
+            { id: 'foguetao', name: 'Foguetão', icon: '🚀', bg: 'bg-purple-100', sound: 'Foguetão Espacial' },
+            { id: 'astronauta', name: 'Astronauta', icon: '👨‍🚀', bg: 'bg-indigo-100', sound: 'Astronauta' },
+            { id: 'monstro', name: 'Monstro', icon: '👾', bg: 'bg-purple-100', sound: 'Monstro de Halloween' },
+            { id: 'mumia', name: 'Múmia', icon: '🧟', bg: 'bg-stone-100', sound: 'Múmia' },
+            { id: 'superheroi', name: 'Super-herói', icon: '🦸', bg: 'bg-red-100', sound: 'Super Herói' },
+            { id: 'painatal', name: 'Pai Natal', icon: '🎅', bg: 'bg-red-100', sound: 'Pai Natal' },
+            { id: 'coelho', name: 'Coelho Páscoa', icon: '🐰', bg: 'bg-pink-100', sound: 'Coelho da Páscoa' },
+            { id: 'medico', name: 'Médico', icon: '🧑‍⚕️', bg: 'bg-cyan-100', sound: 'Médico ou Enfermeiro' },
+            { id: 'cozinheiro', name: 'Cozinheiro', icon: '🧑‍🍳', bg: 'bg-amber-100', sound: 'Cozinheiro' },
+            { id: 'detetive', name: 'Detetive', icon: '🕵️', bg: 'bg-slate-200', sound: 'Detetive' },
+            { id: 'explorador', name: 'Explorador', icon: '🤠', bg: 'bg-amber-100', sound: 'Arqueólogo Explorador' },
+            { id: 'pirata', name: 'Pirata', icon: '🏴‍☠️', bg: 'bg-slate-300', sound: 'Pirata' },
+            { id: 'cavaleiro', name: 'Cavaleiro', icon: '🛡️', bg: 'bg-slate-200', sound: 'Cavaleiro Medieval' },
+            { id: 'princesa', name: 'Princesa', icon: '👑', bg: 'bg-pink-100', sound: 'Princesa' }
+        ];
+
+        // Level Definitions with Gentler Progression
+        const levels = [
+            {
+                id: 1,
+                title: "1. Um Passo em Frente",
+                gridSize: 3,
+                start: { x: 1, y: 2, dir: 0 },
+                goal: { x: 1, y: 1, icon: "🔋", label: "Pilha" },
+                obstacles: [],
+                items: [],
+                mission: "Dá 1 passo para a frente para apanhar a Pilha! 🔋",
+                starsRequirement: 1
+            },
+            {
+                id: 2,
+                title: "2. Dois Passos em Frente",
+                gridSize: 3,
+                start: { x: 1, y: 2, dir: 0 },
+                goal: { x: 1, y: 0, icon: "🔋", label: "Pilha" },
+                obstacles: [],
+                items: [],
+                mission: "Carrega 2 vezes na Seta Cima para o Robot chegar à Pilha! 🔋",
+                starsRequirement: 2
+            },
+            {
+                id: 3,
+                title: "3. Virar à Direita",
+                gridSize: 3,
+                start: { x: 0, y: 2, dir: 0 },
+                goal: { x: 2, y: 2, icon: "⭐", label: "Estrela" },
+                obstacles: [],
+                items: [],
+                mission: "Usa as Setas para ir até à Estrela! ⭐",
+                starsRequirement: 2
+            },
+            {
+                id: 4,
+                title: "4. Caminho sem Obstáculos",
+                gridSize: 4,
+                start: { x: 0, y: 3, dir: 0 },
+                goal: { x: 3, y: 0, icon: "🌻", label: "Girassol" },
+                obstacles: [],
+                items: [],
+                mission: "Muda de direção para chegar ao Girassol! 🌻",
+                starsRequirement: 4
+            },
+            {
+                id: 5,
+                title: "5. Primeiro Obstáculo",
+                gridSize: 4,
+                start: { x: 0, y: 3, dir: 0 },
+                goal: { x: 3, y: 3, icon: "⭐", label: "Estrela" },
+                obstacles: [
+                    { x: 1, y: 3, icon: "🪨" }
+                ],
+                items: [],
+                mission: "Passa por cima das pedras subindo e descendo para apanhar a Estrela! ⭐",
+                starsRequirement: 4
+            },
+            {
+                id: 6,
+                title: "6. Ação e Chave Mágica",
+                gridSize: 4,
+                start: { x: 0, y: 3, dir: 0 },
+                goal: { x: 3, y: 0, icon: "🎁", label: "Presente" },
+                obstacles: [
+                    { x: 1, y: 1, icon: "🪨" }
+                ],
+                items: [
+                    { x: 0, y: 1, icon: "🔑", requiredAction: true, collected: false, label: "Chave" }
+                ],
+                mission: "Usa o botão 'AÇÃO ⚡' para apanhar a Chave 🔑 antes do Presente 🎁!",
+                starsRequirement: 6
+            },
+            {
+                id: 7,
+                title: "7. O Grande Desafio",
+                gridSize: 5,
+                start: { x: 0, y: 4, dir: 0 },
+                goal: { x: 4, y: 0, icon: "🚀", label: "Foguetão" },
+                obstacles: [
+                    { x: 1, y: 4, icon: "☄️" },
+                    { x: 2, y: 2, icon: "☄️" },
+                    { x: 3, y: 1, icon: "☄️" }
+                ],
+                items: [],
+                mission: "Desvia-te dos cometas com calma até chegares ao Foguetão! 🚀",
+                starsRequirement: 8
+            }
+        ];
+
+        // Web Audio API Sound Effects Generator
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.log("Audio not supported or blocked");
+            }
+        }
+
+        function playSoundEffect(effectName) {
+            if (!soundEnabled) return;
+            if (effectName === 'click') {
+                playBeep(520, 'sine', 0.08);
+            } else if (effectName === 'add') {
+                playBeep(650, 'triangle', 0.12);
+            } else if (effectName === 'move') {
+                playBeep(330, 'sine', 0.15);
+            } else if (effectName === 'turn') {
+                playBeep(420, 'sine', 0.15);
+            } else if (effectName === 'action') {
+                playBeep(880, 'square', 0.2);
+            } else if (effectName === 'bump') {
+                playBeep(150, 'sawtooth', 0.3);
+            } else if (effectName === 'victory') {
+                // Happy chord
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    setTimeout(() => playBeep(freq, 'triangle', 0.25), idx * 120);
+                });
+            }
+        }
+
+        // Web Speech API Narrator (Portuguese Text-To-Speech)
+        function speak(text) {
+            if (!speechEnabled) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop current speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'pt-PT';
+                utterance.rate = 0.95; // Slightly slower for kids
+                utterance.pitch = 1.1; // Friendly tone
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function loadLevel(index) {
+            if (index < 0 || index >= levels.length) return;
+            currentLevelIndex = index;
+            const lvl = levels[currentLevelIndex];
+
+            // Update Level Title
+            const titleEl = document.getElementById('level-title');
+            if (titleEl) titleEl.innerText = lvl.title;
+
+            // Update Mission Text
+            const missionEl = document.getElementById('mission-text');
+            if (missionEl) missionEl.innerText = lvl.mission;
+
+            // Reset items collected state
+            lvl.items.forEach(item => item.collected = false);
+
+            // Reset robot position & direction
+            robotPos = { ...lvl.start };
+            robotDir = lvl.start.dir;
+            robotAngle = robotDir * 90;
+
+            // Clear program sequence
+            sequence = [];
+            renderSequenceBar();
+
+            // Reset stars indicator
+            updateStarsDisplay(0);
+
+            // Render Grid & Robot
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const lvl = levels[currentLevelIndex];
+            const gridEl = document.getElementById('grid');
+            if (!gridEl) return;
+
+            gridEl.style.gridTemplateColumns = `repeat(${lvl.gridSize}, minmax(0, 1fr))`;
+            gridEl.style.gridTemplateRows = `repeat(${lvl.gridSize}, minmax(0, 1fr))`;
+            gridEl.innerHTML = '';
+
+            for (let y = 0; y < lvl.gridSize; y++) {
+                for (let x = 0; x < lvl.gridSize; x++) {
+                    const cell = document.createElement('div');
+                    cell.id = `cell-${x}-${y}`;
+                    cell.className = 'grid-cell bg-white/80 border-2 border-sky-100 rounded-2xl flex items-center justify-center relative shadow-sm overflow-hidden text-2xl sm:text-3xl select-none';
+
+                    // Check if goal
+                    if (lvl.goal.x === x && lvl.goal.y === y) {
+                        cell.classList.add('bg-amber-50', 'border-amber-300');
+                        cell.innerHTML = `<span class="animate-pulse" title="${lvl.goal.label}">${lvl.goal.icon}</span>`;
+                    }
+
+                    // Check if obstacle
+                    const obstacle = lvl.obstacles.find(o => o.x === x && o.y === y);
+                    if (obstacle) {
+                        cell.classList.add('bg-slate-100');
+                        cell.innerHTML = `<span>${obstacle.icon}</span>`;
+                    }
+
+                    // Check if item
+                    const item = lvl.items.find(i => i.x === x && i.y === y && !i.collected);
+                    if (item) {
+                        cell.innerHTML = `<span class="animate-bounce" title="${item.label}">${item.icon}</span>`;
+                    }
+
+                    gridEl.appendChild(cell);
+                }
+            }
+
+            // Render Robot in its position
+            renderRobot();
+        }
+
+        // Initialize Game on Load
+        window.onload = function() {
+            loadLevel(currentLevelIndex);
+            populateCostumesGrid();
+            speakCurrentMission();
+        };
+
+        function openCostumeModal() {
+            if (isRunning) return;
+            playSoundEffect('click');
+            document.getElementById('costume-modal').classList.remove('hidden');
+            speak("Escolhe a roupa para o teu robot!");
+        }
+
+        function closeCostumeModal() {
+            playSoundEffect('click');
+            document.getElementById('costume-modal').classList.add('hidden');
+        }
+
+        function populateCostumesGrid() {
+            const container = document.getElementById('costumes-grid');
+            if (!container) return;
+            container.innerHTML = '';
+
+            costumeList.forEach(item => {
+                const btn = document.createElement('button');
+                const isSelected = item.id === currentCostume;
+                btn.className = `${item.bg} p-2 rounded-2xl flex flex-col items-center justify-center border-3 ${isSelected ? 'border-pink-500 shadow-md scale-105 ring-2 ring-pink-400' : 'border-slate-200 hover:border-pink-300'} transition active:scale-95 text-center`;
+                btn.onclick = () => setCostume(item);
+
+                btn.innerHTML = `
+                    <span class="text-3xl sm:text-4xl my-1">${item.icon}</span>
+                    <span class="text-[10px] sm:text-xs font-bold text-slate-800 line-clamp-1 leading-tight">${item.name}</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function setCostume(item) {
+            currentCostume = item.id;
+            playSoundEffect('action');
+            speak(`Escolheste ${item.sound}!`);
+            populateCostumesGrid();
+            renderRobot();
+        }
+
+        function renderRobot() {
+            // Remove previous robot element
+            const oldRobot = document.getElementById('robot');
+            if (oldRobot) oldRobot.remove();
+
+            const targetCell = document.getElementById(`cell-${robotPos.x}-${robotPos.y}`);
+            if (!targetCell) return;
+
+            const robot = document.createElement('div');
+            robot.id = 'robot';
+            robot.className = 'robot-avatar absolute inset-0 flex items-center justify-center z-10';
+            
+            // Rotation based on continuous angle so transitions are smooth and face always leads the movement
+            robot.style.transform = `rotate(${robotAngle}deg)`;
+
+            const cObj = costumeList.find(c => c.id === currentCostume) || costumeList[0];
+
+            if (currentCostume === 'robot') {
+                // SVG Animated Robot Icon
+                robot.innerHTML = `
+                    <div class="relative w-4/5 h-4/5 flex items-center justify-center drop-shadow-md">
+                        <svg viewBox="0 0 100 100" class="w-full h-full">
+                            <!-- Wheels -->
+                            <rect x="10" y="25" width="12" height="50" rx="5" fill="#334155" />
+                            <rect x="78" y="25" width="12" height="50" rx="5" fill="#334155" />
+                            <!-- Body -->
+                            <rect x="20" y="20" width="60" height="60" rx="15" fill="#38bdf8" stroke="#0284c7" stroke-width="4" />
+                            <!-- Screen Face -->
+                            <rect x="30" y="32" width="40" height="28" rx="8" fill="#0f172a" />
+                            <!-- Eyes -->
+                            <circle cx="42" cy="46" r="5" fill="#38edf8" />
+                            <circle cx="58" cy="46" r="5" fill="#38edf8" />
+                            <!-- Antenna -->
+                            <line x1="50" y1="20" x2="50" y2="8" stroke="#0284c7" stroke-width="4" stroke-linecap="round" />
+                            <circle cx="50" cy="6" r="6" fill="#f59e0b" />
+                            <!-- Direction Marker Arrow -->
+                            <path d="M 50 22 L 43 30 L 57 30 Z" fill="#f59e0b" />
+                        </svg>
+                    </div>
+                `;
+            } else {
+                // Costume Avatar with Direction Pointer Arrow
+                robot.innerHTML = `
+                    <div class="relative w-full h-full flex items-center justify-center select-none">
+                        <!-- Direction Marker Arrow Header -->
+                        <div class="absolute top-0 text-amber-500 text-xs sm:text-sm font-black animate-pulse z-20">
+                            ▲
+                        </div>
+                        <div class="text-4xl sm:text-5xl filter drop-shadow-md transition-transform">
+                            ${cObj.icon}
+                        </div>
+                    </div>
+                `;
+            }
+
+            targetCell.appendChild(robot);
+        }
+
+        function addCommand(type) {
+            if (isRunning) return;
+
+            if (sequence.length >= MAX_STEPS) {
+                playSoundEffect('bump');
+                speak("A sequência está cheia! Carrega no botão verde para ligar o robot!");
+                return;
+            }
+
+            const commandMeta = {
+                'move-up': { icon: 'fa-arrow-up', color: 'bg-emerald-500', text: 'Seta Cima', sound: 'Mover para cima' },
+                'move-down': { icon: 'fa-arrow-down', color: 'bg-amber-500', text: 'Seta Baixo', sound: 'Mover para baixo' },
+                'move-left': { icon: 'fa-arrow-left', color: 'bg-sky-500', text: 'Seta Esquerda', sound: 'Mover para a esquerda' },
+                'move-right': { icon: 'fa-arrow-right', color: 'bg-teal-500', text: 'Seta Direita', sound: 'Mover para a direita' },
+                'turn-left': { icon: 'fa-rotate-left', color: 'bg-purple-500', text: 'Girar ↺', sound: 'Girar para a esquerda' },
+                'turn-right': { icon: 'fa-rotate-right', color: 'bg-indigo-500', text: 'Girar ↻', sound: 'Girar para a direita' },
+                'forward': { icon: 'fa-arrow-up', color: 'bg-emerald-500', text: 'Avançar', sound: 'Avançar' },
+                'backward': { icon: 'fa-arrow-down', color: 'bg-amber-500', text: 'Recuar', sound: 'Recuar' },
+                'action': { icon: 'fa-bolt', color: 'bg-rose-500', text: 'Ação ⚡', sound: 'Ação' }
+            };
+
+            const cmd = commandMeta[type];
+            sequence.push({ type, ...cmd });
+
+            playSoundEffect('add');
+            speak(cmd.sound);
+            renderSequenceBar();
+        }
+
+        function removeLastCommand() {
+            if (isRunning || sequence.length === 0) return;
+            sequence.pop();
+            playSoundEffect('click');
+            speak("Último passo retirado");
+            renderSequenceBar();
+        }
+
+        function clearProgram() {
+            if (isRunning) return;
+            sequence = [];
+            playSoundEffect('click');
+            renderSequenceBar();
+            // Reset Robot position to start
+            const lvl = levels[currentLevelIndex];
+            robotPos = { ...lvl.start };
+            robotDir = lvl.start.dir;
+            robotAngle = robotDir * 90;
+            renderGrid();
+        }
+
+        function renderSequenceBar() {
+            const bar = document.getElementById('sequence-bar');
+            const stepCountEl = document.getElementById('step-count');
+            
+            stepCountEl.innerText = `${sequence.length} / ${MAX_STEPS} passos`;
+
+            if (sequence.length === 0) {
+                bar.innerHTML = `
+                    <p id="empty-hint" class="text-slate-400 font-semibold text-sm w-full text-center py-4">
+                        <i class="fa-solid fa-hand-pointer mr-1 animate-pulse"></i> Toca nas setas abaixo para adicionar ações!
+                    </p>
+                `;
+                return;
+            }
+
+            bar.innerHTML = '';
+            sequence.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.id = `seq-step-${index}`;
+                card.className = `${item.color} text-white p-2 sm:p-2.5 rounded-xl shadow-md flex flex-col items-center justify-center min-w-[60px] sm:min-w-[70px] transition-all relative border-2 border-white/30`;
+                card.innerHTML = `
+                    <i class="fa-solid ${item.icon} text-lg sm:text-xl"></i>
+                    <span class="text-[9px] sm:text-[10px] font-bold mt-1 text-center line-clamp-1">${item.text}</span>
+                    <span class="absolute -top-1.5 -right-1.5 bg-slate-800 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">${index + 1}</span>
+                `;
+                bar.appendChild(card);
+            });
+        }
+
+        function setRobotFacingDirection(targetDir) {
+            robotDir = targetDir;
+            let targetBaseAngle = targetDir * 90;
+            let diff = (targetBaseAngle - (robotAngle % 360) + 540) % 360 - 180;
+            robotAngle += diff;
+        }
+
+        async function runProgram() {
+            if (isRunning) return;
+
+            if (sequence.length === 0) {
+                playSoundEffect('bump');
+                speak("Adiciona primeiro alguns passos com os botões coloridos!");
+                return;
+            }
+
+            isRunning = true;
+            togglePlayButtonState(true);
+
+            // Reset Robot Position & Angle to Level Start before executing
+            const lvl = levels[currentLevelIndex];
+            robotPos = { ...lvl.start };
+            robotDir = lvl.start.dir;
+            robotAngle = robotDir * 90;
+            renderGrid();
+
+            speak("A ligar o robot! Vamos a isso!");
+            await sleep(600);
+
+            let success = false;
+            let executionFailed = false;
+
+            // Slower speeds suitable for preschool children
+            const delay = isSlowSpeed ? 1400 : 850;
+            const turnPause = 350;
+
+            for (let i = 0; i < sequence.length; i++) {
+                if (!isRunning) break; // User stopped
+
+                // Highlight active card in sequence bar
+                highlightStep(i);
+
+                const cmd = sequence[i];
+                const prevPos = { ...robotPos };
+
+                if (cmd.type === 'move-up') {
+                    setRobotFacingDirection(0);
+                    renderRobot();
+                    await sleep(turnPause);
+                    robotPos.y -= 1;
+                    playSoundEffect('move');
+                    speak("Cima");
+                } else if (cmd.type === 'move-down') {
+                    setRobotFacingDirection(2);
+                    renderRobot();
+                    await sleep(turnPause);
+                    robotPos.y += 1;
+                    playSoundEffect('move');
+                    speak("Baixo");
+                } else if (cmd.type === 'move-left') {
+                    setRobotFacingDirection(3);
+                    renderRobot();
+                    await sleep(turnPause);
+                    robotPos.x -= 1;
+                    playSoundEffect('move');
+                    speak("Esquerda");
+                } else if (cmd.type === 'move-right') {
+                    setRobotFacingDirection(1);
+                    renderRobot();
+                    await sleep(turnPause);
+                    robotPos.x += 1;
+                    playSoundEffect('move');
+                    speak("Direita");
+                } else if (cmd.type === 'forward') {
+                    success = executeMove(1);
+                } else if (cmd.type === 'backward') {
+                    success = executeMove(-1);
+                } else if (cmd.type === 'turn-right') {
+                    robotAngle += 90;
+                    robotDir = (Math.round(robotAngle / 90) % 4 + 4) % 4;
+                    playSoundEffect('turn');
+                    speak("Girar direita");
+                } else if (cmd.type === 'turn-left') {
+                    robotAngle -= 90;
+                    robotDir = (Math.round(robotAngle / 90) % 4 + 4) % 4;
+                    playSoundEffect('turn');
+                    speak("Girar esquerda");
+                } else if (cmd.type === 'action') {
+                    executeAction();
+                }
+
+                // Check collision or out of bounds
+                if (isOutOfBounds(robotPos, lvl.gridSize) || isObstacleHit(robotPos, lvl)) {
+                    // Revert to previous valid position so the robot stays visible on the board
+                    robotPos = { ...prevPos };
+                    renderRobot();
+
+                    playSoundEffect('bump');
+                    speak("Oh oh! O robot bateu num obstáculo. Tenta outra vez!");
+                    showToast("🪨 Ups!", "O robot encontrou um obstáculo! Tenta mudar os passos.", false);
+                    executionFailed = true;
+                    break;
+                }
+
+                renderRobot();
+
+                // Check goal reached
+                if (robotPos.x === lvl.goal.x && robotPos.y === lvl.goal.y) {
+                    // Check if level required actions/items collected
+                    const missingItems = lvl.items.filter(item => item.requiredAction && !item.collected);
+                    if (missingItems.length > 0) {
+                        playSoundEffect('bump');
+                        speak("Falta apanhar a chave com o botão Ação!");
+                        showToast("🔑 Falta a Chave!", "Precisas de usar o botão 'AÇÃO ⚡' em cima da chave!", false);
+                        executionFailed = true;
+                        break;
+                    } else {
+                        // VICTORY!
+                        playSoundEffect('victory');
+                        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                        speak("Fantástico! O robot cumpriu a missão!");
+                        updateStarsDisplay(3);
+                        showToast("🎉 Parabéns!", "Conseguiste guiar o robot até ao objetivo com sucesso!", true);
+                        success = true;
+                        break;
+                    }
+                }
+
+                const stepWait = Math.max(100, delay - turnPause);
+                await sleep(stepWait);
+                unhighlightStep(i);
+            }
+
+            if (!success && !executionFailed) {
+                // Sequence finished but didn't reach target
+                playSoundEffect('bump');
+                speak("Quase! O robot não chegou à meta. Adiciona mais passos!");
+                showToast("🤔 Quase lá!", "O robot parou antes da meta. Precisas de mais alguns passos!", false);
+            }
+
+            isRunning = false;
+            togglePlayButtonState(false);
+        }
+
+        function executeMove(stepDelta) {
+            playSoundEffect('move');
+            // Movement vector according to robotDir
+            // 0: Up (y - 1), 1: Right (x + 1), 2: Down (y + 1), 3: Left (x - 1)
+            let dx = 0;
+            let dy = 0;
+
+            if (robotDir === 0) dy = -1;
+            else if (robotDir === 1) dx = 1;
+            else if (robotDir === 2) dy = 1;
+            else if (robotDir === 3) dx = -1;
+
+            robotPos.x += dx * stepDelta;
+            robotPos.y += dy * stepDelta;
+            return true;
+        }
+
+        function executeAction() {
+            playSoundEffect('action');
+            speak("Ação!");
+            const lvl = levels[currentLevelIndex];
+            const item = lvl.items.find(i => i.x === robotPos.x && i.y === robotPos.y);
+            if (item) {
+                item.collected = true;
+                speak(`Apanhaste a ${item.label}!`);
+                renderGrid();
+            }
+        }
+
+        function isOutOfBounds(pos, size) {
+            return pos.x < 0 || pos.x >= size || pos.y < 0 || pos.y >= size;
+        }
+
+        function isObstacleHit(pos, lvl) {
+            return lvl.obstacles.some(o => o.x === pos.x && o.y === pos.y);
+        }
+
+        function highlightStep(idx) {
+            const card = document.getElementById(`seq-step-${idx}`);
+            if (card) {
+                card.classList.add('command-active');
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+
+        function unhighlightStep(idx) {
+            const card = document.getElementById(`seq-step-${idx}`);
+            if (card) {
+                card.classList.remove('command-active');
+            }
+        }
+
+        function togglePlayButtonState(running) {
+            const btn = document.getElementById('btn-play');
+            if (running) {
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-2xl"></i> <span>A EXECUTAR...</span>`;
+                btn.classList.replace('bg-emerald-500', 'bg-amber-500');
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-play text-xl sm:text-2xl"></i> <span>LIGAR ROBOT!</span>`;
+                btn.classList.replace('bg-amber-500', 'bg-emerald-500');
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('icon-sound');
+            const btn = document.getElementById('btn-sound');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-lg sm:text-xl';
+                btn.classList.replace('bg-slate-200', 'bg-emerald-100');
+                speak("Sons ligados");
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-lg sm:text-xl';
+                btn.classList.replace('bg-emerald-100', 'bg-slate-200');
+            }
+        }
+
+        function toggleSpeech() {
+            speechEnabled = !speechEnabled;
+            const icon = document.getElementById('icon-speech');
+            const btn = document.getElementById('btn-speech');
+            if (speechEnabled) {
+                icon.className = 'fa-solid fa-comment-dots text-lg sm:text-xl';
+                btn.classList.replace('bg-slate-200', 'bg-purple-100');
+                speak("Voz de ajuda ligada");
+            } else {
+                icon.className = 'fa-solid fa-comment-slash text-lg sm:text-xl';
+                btn.classList.replace('bg-purple-100', 'bg-slate-200');
+            }
+        }
+
+        function toggleContrast() {
+            highContrast = !highContrast;
+            document.body.classList.toggle('high-contrast', highContrast);
+            playSoundEffect('click');
+        }
+
+        function toggleTextSize() {
+            largeText = !largeText;
+            document.body.classList.toggle('text-large', largeText);
+            playSoundEffect('click');
+        }
+
+        function toggleSpeed() {
+            isSlowSpeed = !isSlowSpeed;
+            const icon = document.getElementById('icon-speed');
+            const label = document.getElementById('label-speed');
+            if (isSlowSpeed) {
+                icon.className = 'fa-solid fa-turtle text-lg sm:text-xl text-emerald-700';
+                label.innerText = 'Devagar';
+                speak("Modo Devagar");
+            } else {
+                icon.className = 'fa-solid fa-rabbit text-lg sm:text-xl text-orange-600';
+                label.innerText = 'Rápido';
+                speak("Modo Rápido");
+            }
+        }
+
+        function changeLevel(delta) {
+            if (isRunning) return;
+            const newIndex = currentLevelIndex + delta;
+            if (newIndex >= 0 && newIndex < levels.length) {
+                loadLevel(newIndex);
+                playSoundEffect('click');
+                speakCurrentMission();
+            }
+        }
+
+        function speakCurrentMission() {
+            const lvl = levels[currentLevelIndex];
+            speak(lvl.mission);
+        }
+
+        function updateStarsDisplay(earned) {
+            const container = document.getElementById('stars-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                if (i < earned) {
+                    container.innerHTML += `<i class="fa-solid fa-star text-amber-400"></i>`;
+                } else {
+                    container.innerHTML += `<i class="fa-regular fa-star text-slate-300"></i>`;
+                }
+            }
+        }
+
+        function showToast(title, message, isSuccess) {
+            const toast = document.getElementById('message-toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-body').innerText = message;
+            document.getElementById('toast-icon').innerText = isSuccess ? "🌟" : "🤖";
+            
+            const btn = document.getElementById('toast-btn');
+            if (isSuccess && currentLevelIndex < levels.length - 1) {
+                btn.innerText = "Próximo Nível 🚀";
+                btn.onclick = () => { closeToast(); changeLevel(1); };
+            } else {
+                btn.innerText = "Tentar Novamente 🔄";
+                btn.onclick = () => closeToast();
+            }
+
+            toast.classList.remove('hidden');
+        }
+
+        function closeToast() {
+            document.getElementById('message-toast').classList.add('hidden');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
